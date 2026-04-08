@@ -100,6 +100,51 @@ lib/WireGuard/
 └── library.json             ← PlatformIO library manifest
 ```
 
+## Required Patches to Vendored Code
+
+### 1. Packed Struct Alignment (RISC-V Safety)
+
+All WireGuard message structs in `wireguard.h` use `__attribute__((packed))` and
+are cast from pbuf payloads. On ESP32-C3 RISC-V, direct multi-byte member access
+on unaligned addresses **will fault**. The counter/nonce fields already use
+byte-level macros (`U8TO64_LITTLE`), but all struct member access from pbuf
+pointers must be audited. Patch: access packed struct fields via `memcpy`.
+
+### 2. Strip Responder-Only Code (~350 lines)
+
+Remove functions only needed for WireGuard servers/responders:
+- `wireguard_process_initiation_message()` — processes incoming Type 1
+- `wireguard_create_handshake_response()` — creates Type 2
+- `wireguard_create_cookie_reply()` — creates Type 3
+- `wireguard_check_mac1/mac2()` — validates incoming initiation MACs
+- `generate_cookie_secret/peer_cookie()` — DoS cookie generation
+- `wireguardif_send_handshake_response/cookie()` — sends Type 2/3
+- `wireguardif_check_initiation_message()` — incoming initiation validation
+- `xchacha20poly1305_encrypt()` — only used for cookie reply creation
+- Type 1 (initiation) handler in `wireguardif_network_rx()`
+
+Keep `xchacha20poly1305_decrypt()` — server may send cookie replies (Type 3).
+
+### 3. Zero-Copy Receive (from microlink pattern)
+
+Patch `wireguardif_process_data_message()` to decrypt in-place in the received
+pbuf and strip the WG header, instead of allocating a second pbuf. Feed
+decrypted data directly to `ip_input()`.
+
+### 4. Watchdog Feeding (from tailscale-iot pattern)
+
+Add `esp_task_wdt_reset()` before and after X25519 DH operations in
+`wireguard_create_handshake_initiation()` and
+`wireguard_process_handshake_response()`. X25519 can block 100-300ms on
+single-core 160MHz RISC-V, triggering WDT reset without this.
+
+### 5. Device Struct Savings (-68 bytes)
+
+Remove responder-only fields from `wireguard_device`:
+- `cookie_secret[32]` — DoS cookie secret
+- `cookie_secret_millis` — cookie rotation timer
+- `label_cookie_key[32]` — device-level cookie MAC key
+
 ## Integration Points
 
 ### WiFi Lifecycle — 2 Hook Points
