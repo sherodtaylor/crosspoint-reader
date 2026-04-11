@@ -9,6 +9,7 @@
 
 #include "MappedInputManager.h"
 #include "WifiCredentialStore.h"
+#include "network/WireGuardManager.h"
 #include "activities/util/KeyboardEntryActivity.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
@@ -689,6 +690,9 @@ void WifiSelectionActivity::renderForgetPrompt() const {
 }
 
 void WifiSelectionActivity::onComplete(const bool connected) {
+  if (connected) {
+    WireGuardManager::getInstance().onWifiConnected();
+  }
   ActivityResult result;
   result.isCancelled = !connected;
   if (connected) {

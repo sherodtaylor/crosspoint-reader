@@ -1,0 +1,8 @@
+{
+  "name": "inih",
+  "version": "58",
+  "description": "Simple INI file parser (benhoyt/inih, BSD-3-Clause)",
+  "license": "BSD-3-Clause",
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

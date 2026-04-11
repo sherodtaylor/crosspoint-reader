@@ -9,14 +9,56 @@
 #include <cstdint>
 #include <string>
 
+#include "CrossPointSettings.h"
+#include "CrossPointState.h"
 #include "I18n.h"
 #include "RecentBooksStore.h"
 #include "components/UITheme.h"
 #include "fontIds.h"
+#include "network/WireGuardCredentialStore.h"
 
 // Internal constants
 namespace {
 constexpr int batteryPercentSpacing = 4;
+constexpr int vpnIconWidth = 15;
+constexpr int vpnIconSpacing = 6;
+
+// Draw a padlock icon (15x12 pixels, same size as battery icon).
+// Shackle is ~half the height, body is ~half — standard padlock proportions.
+// locked=true: closed shackle (VPN tunnel active)
+// locked=false: open shackle, right side raised (VPN configured but not connected)
+//
+// Locked (15x12):          Unlocked (15x12):
+//    .....█████.....         .....█████.....
+//    ....█.....█....         ....█.....█....
+//    ....█.....█....         ....█..........
+//    ....█.....█....         ....█..........
+//    ....█.....█....         ....█..........
+//    ███████████████         ███████████████
+//    ███████████████         ███████████████
+//    ██████·████████         ██████·████████
+//    ██████·████████         ██████·████████
+//    ███████████████         ███████████████
+//    ███████████████         ███████████████
+//    ███████████████         ███████████████
+//
+void drawVpnLockIcon(const GfxRenderer& renderer, int x, int y, bool locked) {
+  // Shackle (rows 0-4)
+  renderer.drawLine(x + 5, y + 0, x + 9, y + 0);         // top bar
+  renderer.drawLine(x + 4, y + 1, x + 4, y + 4);         // left side
+  renderer.drawPixel(x + 10, y + 1);                      // right top corner
+  if (locked) {
+    renderer.drawLine(x + 10, y + 1, x + 10, y + 4);     // right side (closed)
+  }
+  // Unlocked: right side simply missing — open gap
+
+  // Lock body (rows 5-11)
+  renderer.fillRect(x, y + 5, 15, 7);
+
+  // Keyhole (white on black body)
+  renderer.drawPixel(x + 7, y + 7, false);
+  renderer.drawPixel(x + 7, y + 8, false);
+}
 constexpr int homeMenuMargin = 20;
 constexpr int homeMarginTop = 30;
 constexpr int subtitleY = 738;
@@ -309,6 +351,13 @@ void BaseTheme::drawHeader(const GfxRenderer& renderer, Rect rect, const char* t
   drawBatteryRight(renderer,
                    Rect{batteryX, rect.y + 5, BaseMetrics::values.batteryWidth, BaseMetrics::values.batteryHeight},
                    showBatteryPercentage);
+
+  // Draw VPN lock icon to the left of the battery when WireGuard is configured
+  if (SETTINGS.wireguardEnabled && !WG_STORE.getPrivateKey().empty()) {
+    const bool tunnelUp = APP_STATE.vpnConnected;
+    const int vpnX = batteryX - vpnIconWidth - vpnIconSpacing;
+    drawVpnLockIcon(renderer, vpnX, rect.y + 7, tunnelUp);
+  }
 
   if (title) {
     int padding = rect.width - batteryX + BaseMetrics::values.batteryWidth;

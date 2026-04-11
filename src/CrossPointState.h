@@ -12,6 +12,9 @@ class CrossPointState {
   uint8_t lastSleepImage = UINT8_MAX;  // UINT8_MAX = unset sentinel
   uint8_t readerActivityLoadCount = 0;
   bool lastSleepFromReader = false;
+  bool vpnConnected = false;     // Set by WireGuardManager, read by UI — not persisted
+  bool vpnConnecting = false;    // Background handshake in progress
+  bool vpnConnectionFailed = false;  // Last connection attempt failed — UI should offer retry
   ~CrossPointState() = default;
 
   // Get singleton instance

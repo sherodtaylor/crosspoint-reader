@@ -7,6 +7,7 @@
 #include "CrossPointSettings.h"
 #include "KOReaderCredentialStore.h"
 #include "activities/settings/SettingsActivity.h"
+#include "network/WireGuardCredentialStore.h"
 
 // Shared settings list used by both the device settings UI and the web settings API.
 // Each entry has a key (for JSON API) and category (for grouping).
@@ -119,6 +120,46 @@ inline const std::vector<SettingInfo>& getSettingsList() {
                           StrId::STR_OPDS_BROWSER),
       SettingInfo::String(StrId::STR_PASSWORD, SETTINGS.opdsPassword, sizeof(SETTINGS.opdsPassword), "opdsPassword",
                           StrId::STR_OPDS_BROWSER)
+          .withObfuscated(),
+      // --- WireGuard VPN (uses WireGuardCredentialStore) ---
+      SettingInfo::Toggle(StrId::STR_WIREGUARD_ENABLED, &CrossPointSettings::wireguardEnabled, "wireguardEnabled",
+                          StrId::STR_WIREGUARD),
+      SettingInfo::DynamicString(
+          StrId::STR_WIREGUARD_ENDPOINT, [] { return WG_STORE.getEndpoint(); },
+          [](const std::string& v) {
+            WG_STORE.setEndpoint(v);
+            WG_STORE.saveToFile();
+          },
+          "wireguardEndpoint", StrId::STR_WIREGUARD),
+      SettingInfo::DynamicString(
+          StrId::STR_WIREGUARD_PRIVATE_KEY, [] { return WG_STORE.getPrivateKey(); },
+          [](const std::string& v) {
+            WG_STORE.setPrivateKey(v);
+            WG_STORE.saveToFile();
+          },
+          "wireguardPrivateKey", StrId::STR_WIREGUARD)
+          .withObfuscated(),
+      SettingInfo::DynamicString(
+          StrId::STR_WIREGUARD_PEER_KEY, [] { return WG_STORE.getPeerPublicKey(); },
+          [](const std::string& v) {
+            WG_STORE.setPeerPublicKey(v);
+            WG_STORE.saveToFile();
+          },
+          "wireguardPeerPublicKey", StrId::STR_WIREGUARD),
+      SettingInfo::DynamicString(
+          StrId::STR_WIREGUARD_TUNNEL_IP, [] { return WG_STORE.getTunnelIP(); },
+          [](const std::string& v) {
+            WG_STORE.setTunnelIP(v);
+            WG_STORE.saveToFile();
+          },
+          "wireguardTunnelIP", StrId::STR_WIREGUARD),
+      SettingInfo::DynamicString(
+          StrId::STR_WIREGUARD_PSK, [] { return WG_STORE.getPresharedKey(); },
+          [](const std::string& v) {
+            WG_STORE.setPresharedKey(v);
+            WG_STORE.saveToFile();
+          },
+          "wireguardPsk", StrId::STR_WIREGUARD)
           .withObfuscated(),
       // --- Status Bar Settings (web-only, uses StatusBarSettingsActivity) ---
       SettingInfo::Toggle(StrId::STR_CHAPTER_PAGE_COUNT, &CrossPointSettings::statusBarChapterPageCount,

@@ -200,6 +200,9 @@ class CrossPointSettings {
   // Image rendering mode in EPUB reader
   uint8_t imageRendering = IMAGES_DISPLAY;
 
+  // WireGuard VPN settings (credentials stored in WireGuardCredentialStore)
+  uint8_t wireguardEnabled = 0;
+
   ~CrossPointSettings() = default;
 
   // Get singleton instance
