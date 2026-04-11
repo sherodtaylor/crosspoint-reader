@@ -4,6 +4,8 @@
 #include <I18n.h>
 #include <WiFi.h>
 
+#include "network/WifiUtils.h"
+
 #include "MappedInputManager.h"
 #include "activities/network/WifiSelectionActivity.h"
 #include "components/UITheme.h"
@@ -67,10 +69,7 @@ void OtaUpdateActivity::onExit() {
   Activity::onExit();
 
   // Turn off wifi
-  WiFi.disconnect(false);  // false = don't erase credentials, send disconnect frame
-  delay(100);              // Allow disconnect frame to be sent
-  WiFi.mode(WIFI_OFF);
-  delay(100);  // Allow WiFi hardware to fully power down
+  WifiUtils::disconnectAndOff();
 }
 
 void OtaUpdateActivity::render(RenderLock&&) {

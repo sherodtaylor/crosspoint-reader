@@ -7,6 +7,8 @@
 #include <esp_sntp.h>
 
 #include "Epub/Section.h"
+#include "network/WifiUtils.h"
+
 #include "KOReaderCredentialStore.h"
 #include "KOReaderDocumentId.h"
 #include "MappedInputManager.h"
@@ -51,13 +53,7 @@ void syncTimeWithNTP() {
   }
 }
 void wifiOff() {
-  if (esp_sntp_enabled()) {
-    esp_sntp_stop();
-  }
-  WiFi.disconnect(false);
-  delay(100);
-  WiFi.mode(WIFI_OFF);
-  delay(100);
+  WifiUtils::disconnectAndOff();
 }
 }  // namespace
 
