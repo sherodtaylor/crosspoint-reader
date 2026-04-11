@@ -12,6 +12,7 @@
 #include "CrossPointState.h"
 #include "KOReaderCredentialStore.h"
 #include "RecentBooksStore.h"
+#include "network/WireGuardCredentialStore.h"
 #include "SettingsList.h"
 #include "WifiCredentialStore.h"
 
@@ -240,6 +241,54 @@ bool JsonSettingsIO::loadKOReader(KOReaderCredentialStore& store, const char* js
   store.matchMethod = static_cast<DocumentMatchMethod>(method);
 
   LOG_DBG("KRS", "Loaded KOReader credentials for user: %s", store.username.c_str());
+  return true;
+}
+
+// ---- WireGuardCredentialStore ----
+
+bool JsonSettingsIO::saveWireGuard(const WireGuardCredentialStore& store, const char* path) {
+  JsonDocument doc;
+  doc["endpoint"] = store.getEndpoint();
+  doc["privateKey_obf"] = obfuscation::obfuscateToBase64(store.getPrivateKey());
+  doc["peerPublicKey"] = store.getPeerPublicKey();
+  doc["tunnelIP"] = store.getTunnelIP();
+  doc["presharedKey_obf"] = obfuscation::obfuscateToBase64(store.getPresharedKey());
+
+  String json;
+  serializeJson(doc, json);
+  return Storage.writeFile(path, json);
+}
+
+bool JsonSettingsIO::loadWireGuard(WireGuardCredentialStore& store, const char* json, bool* needsResave) {
+  if (needsResave) *needsResave = false;
+  JsonDocument doc;
+  auto error = deserializeJson(doc, json);
+  if (error) {
+    LOG_ERR("WGS", "JSON parse error: %s", error.c_str());
+    return false;
+  }
+
+  store.endpoint = doc["endpoint"] | std::string("");
+  store.peerPublicKey = doc["peerPublicKey"] | std::string("");
+  store.tunnelIP = doc["tunnelIP"] | std::string("");
+
+  // Private key — try obfuscated first, fall back to plaintext
+  bool ok = false;
+  store.privateKey = obfuscation::deobfuscateFromBase64(doc["privateKey_obf"] | "", &ok);
+  if (!ok || store.privateKey.empty()) {
+    store.privateKey = doc["privateKey"] | std::string("");
+    if (!store.privateKey.empty() && needsResave) *needsResave = true;
+  }
+
+  // Preshared key — try obfuscated first, fall back to plaintext
+  ok = false;
+  store.presharedKey = obfuscation::deobfuscateFromBase64(doc["presharedKey_obf"] | "", &ok);
+  if (!ok || store.presharedKey.empty()) {
+    store.presharedKey = doc["presharedKey"] | std::string("");
+    if (!store.presharedKey.empty() && needsResave) *needsResave = true;
+  }
+
+  LOG_DBG("WGS", "Loaded WireGuard credentials (endpoint: %s)", store.endpoint.c_str());
   return true;
 }
 
