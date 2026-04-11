@@ -4,6 +4,8 @@
 #include <I18n.h>
 #include <WiFi.h>
 
+#include "network/WifiUtils.h"
+
 #include "KOReaderCredentialStore.h"
 #include "KOReaderSyncClient.h"
 #include "MappedInputManager.h"
@@ -66,10 +68,7 @@ void KOReaderAuthActivity::onExit() {
   Activity::onExit();
 
   // Turn off wifi
-  WiFi.disconnect(false);
-  delay(100);
-  WiFi.mode(WIFI_OFF);
-  delay(100);
+  WifiUtils::disconnectAndOff();
 }
 
 void KOReaderAuthActivity::render(RenderLock&&) {

@@ -6,6 +6,8 @@
 #include <WiFi.h>
 #include <esp_task_wdt.h>
 
+#include "network/WifiUtils.h"
+
 #include "MappedInputManager.h"
 #include "WifiSelectionActivity.h"
 #include "components/UITheme.h"
@@ -55,10 +57,7 @@ void CalibreConnectActivity::onExit() {
   MDNS.end();
 
   delay(50);
-  WiFi.disconnect(false);
-  delay(30);
-  WiFi.mode(WIFI_OFF);
-  delay(30);
+  WifiUtils::disconnectAndOff();
 }
 
 void CalibreConnectActivity::onWifiSelectionComplete(const bool connected) {

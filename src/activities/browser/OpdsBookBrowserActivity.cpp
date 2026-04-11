@@ -7,6 +7,8 @@
 #include <OpdsStream.h>
 #include <WiFi.h>
 
+#include "network/WifiUtils.h"
+
 #include "CrossPointSettings.h"
 #include "MappedInputManager.h"
 #include "activities/network/WifiSelectionActivity.h"
@@ -40,7 +42,7 @@ void OpdsBookBrowserActivity::onExit() {
   Activity::onExit();
 
   // Turn off WiFi when exiting
-  WiFi.mode(WIFI_OFF);
+  WifiUtils::disconnectAndOff();
 
   entries.clear();
   navigationHistory.clear();
@@ -382,8 +384,7 @@ void OpdsBookBrowserActivity::onWifiSelectionComplete(const bool connected) {
     LOG_DBG("OPDS", "WiFi selection cancelled/failed");
     // Force disconnect to ensure clean state for next retry
     // This prevents stale connection status from interfering
-    WiFi.disconnect();
-    WiFi.mode(WIFI_OFF);
+    WifiUtils::disconnectAndOff();
     state = BrowserState::ERROR;
     errorMessage = tr(STR_WIFI_CONN_FAILED);
     requestUpdate();

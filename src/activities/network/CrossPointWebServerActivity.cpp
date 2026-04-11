@@ -7,6 +7,8 @@
 #include <WiFi.h>
 #include <esp_task_wdt.h>
 
+#include "network/WifiUtils.h"
+
 #include <cstddef>
 
 #include "MappedInputManager.h"
@@ -85,16 +87,11 @@ void CrossPointWebServerActivity::onExit() {
   // Disconnect WiFi gracefully
   if (isApMode) {
     LOG_DBG("WEBACT", "Stopping WiFi AP...");
-    WiFi.softAPdisconnect(true);
+    WifiUtils::disconnectApAndOff();
   } else {
     LOG_DBG("WEBACT", "Disconnecting WiFi (graceful)...");
-    WiFi.disconnect(false);  // false = don't erase credentials, send disconnect frame
+    WifiUtils::disconnectAndOff();
   }
-  delay(30);  // Allow disconnect frame to be sent
-
-  LOG_DBG("WEBACT", "Setting WiFi mode OFF...");
-  WiFi.mode(WIFI_OFF);
-  delay(30);  // Allow WiFi hardware to power down
 
   LOG_DBG("WEBACT", "Free heap at onExit end: %d bytes", ESP.getFreeHeap());
 }
